@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>باركور</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Arial;background:#000;touch-action:none;user-select:none}
+canvas{display:block}
+#menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;padding:20px;color:#fff;z-index:100;
+background:radial-gradient(circle at 25% 15%,rgba(90,140,255,.42),transparent 55%),radial-gradient(circle at 78% 82%,rgba(90,140,255,.22),transparent 55%),linear-gradient(180deg,#5a2a9e,#2a1060 35%,#0a0320 72%,#000)}
+#roomCode{font-size:38px;font-weight:bold;letter-spacing:8px;padding:12px 26px;background:rgba(255,255,255,.15);border-radius:12px}
+#status{font-size:15px;color:#c8d4ff;text-align:center;min-height:20px}
+#joinCorner{position:fixed;top:15px;right:15px;z-index:120;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.6);color:#fff;padding:11px 20px;border-radius:22px;font-size:15px;font-weight:bold;backdrop-filter:blur(4px)}
+#joinPanel{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(0,0,0,.85);z-index:130;color:#fff;padding:20px}
+#joinPanel h3{font-size:18px;font-weight:bold}
+#joinPanel .row{display:flex;gap:12px}
+#joinPanel .row button{border:0;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:bold;background:#fff;color:#2a1060}
+#joinPanel .row button#joinCancel{background:rgba(255,255,255,.2);color:#fff}
+#roomInput{width:220px;padding:15px;font-size:22px;text-align:center;border-radius:8px;border:2px solid #fff;letter-spacing:6px;text-transform:uppercase;background:#0a0320;color:#fff}
+#joy{position:absolute;bottom:25px;left:25px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.7);z-index:10;display:none}
+#stick{position:absolute;top:50%;left:50%;width:55px;height:55px;border-radius:50%;background:rgba(255,255,255,.85);transform:translate(-50%,-50%);pointer-events:none}
+#jump{position:absolute;bottom:35px;right:35px;width:95px;height:95px;border-radius:50%;background:#fff;color:#2a1060;border:0;font-size:18px;font-weight:bold;z-index:10;display:none;align-items:center;justify-content:center}
+#roomInfo{position:absolute;top:15px;left:15px;color:#fff;font-size:15px;font-weight:bold;z-index:15;display:none;text-shadow:1px 1px 3px #000}
+#toast{position:absolute;top:35%;width:100%;text-align:center;color:#ffe66d;font-size:26px;font-weight:bold;text-shadow:2px 2px 5px #000;z-index:12;display:none;pointer-events:none}
+#coinHud{position:absolute;top:15px;right:15px;display:none;align-items:center;gap:10px;background:rgba(0,0,0,.55);padding:10px 16px;border-radius:26px;z-index:15;color:#fff;font-weight:bold;font-size:20px}
+#coinIcon img{width:42px;height:42px;display:block}
+#coinHud button{background:#fff;color:#2a1060;border:0;padding:8px 14px;border-radius:16px;font-weight:bold;font-size:14px;cursor:pointer}
+#viewCodeBtn{background:transparent!important;color:#fff!important;font-size:11px!important;text-decoration:underline;opacity:.85;padding:2px!important;border-radius:0!important}
+#redeemModal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+#redeemBox{background:#1a0a3a;border:2px solid #fff;padding:26px 22px;border-radius:16px;text-align:center;color:#fff;width:100%;max-width:340px}
+#redeemBox h2{font-size:20px;margin-bottom:6px}
+#redeemCode{font-size:28px;font-weight:bold;letter-spacing:6px;color:#ffe66d;background:rgba(0,0,0,.4);padding:14px 10px;border-radius:10px;margin:18px 0;font-family:monospace;user-select:text;-webkit-user-select:text}
+#redeemBox .row{display:flex;gap:10px;justify-content:center}
+#redeemBox button{border:0;padding:12px 22px;border-radius:10px;font-size:15px;font-weight:bold;background:#fff;color:#1a0a3a;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div id="menu">
+  <div id="roomCode" style="display:none"></div>
+  <div id="status">جاري الإنشاء...</div>
+</div>
+
+<button id="joinCorner">انضمام</button>
+
+<div id="joinPanel">
+  <h3>ادخل رمز الغرفة</h3>
+  <input id="roomInput" placeholder="----" maxlength="4">
+  <div class="row">
+    <button id="joinOk">دخول</button>
+    <button id="joinCancel">إلغاء</button>
+  </div>
+</div>
+
+<div id="joy"><div id="stick"></div></div>
+<div id="jump">نط</div>
+<div id="roomInfo"></div>
+<div id="toast"></div>
+
+<div id="coinHud">
+  <span id="coinIcon"></span><span id="coinCount">0</span>
+  <button id="redeemBtn">استرداد</button>
+  <button id="viewCodeBtn">الكود محفوظ</button>
+</div>
+
+<div id="redeemModal">
+  <div id="redeemBox">
+    <h2 id="redeemTitle">كود الاسترداد</h2>
+    <div id="redeemCode">-------</div>
+    <div class="row"><button id="copyBtn">نسخ</button><button id="okBtn">موافق</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.0/peerjs.min.js"></script>
+<script>
+const $=i=>document.getElementById(i);
+const POOL=[['6767676',10],['HAHAHAH',5],['PPPPPPP',5],['MOH6767',5],['HESOYAM',5],['VONJFTG',.5],['BHYGFD',.5],['OKATVCD',.5],['IMJYCXZ',.5],['MOKHSNB',.5],['OJKLUGZ',.5],['ZUPMKH',.5],['WANRNEW',.5],['GDHHJKG',.5],['HHHHHHH',.5],['HIFOVWV',.5],['YFOWQMJ',.5],['GDHTXHA',.5],['AWQMOPA',.5],['HMFYBDK',.5],['VODMHAA',.5],['YFHOLHJ',.5],['TDOEMFH',.5]];
+const E={
+  menu:$('menu'),code:$('roomCode'),status:$('status'),
+  joinCorner:$('joinCorner'),joinPanel:$('joinPanel'),input:$('roomInput'),joinOk:$('joinOk'),joinCancel:$('joinCancel'),
+  joy:$('joy'),stick:$('stick'),jump:$('jump'),info:$('roomInfo'),toast:$('toast'),
+  hud:$('coinHud'),count:$('coinCount'),icon:$('coinIcon'),redeem:$('redeemBtn'),view:$('viewCodeBtn'),
+  modal:$('redeemModal'),rCode:$('redeemCode'),rTitle:$('redeemTitle'),copy:$('copyBtn'),okBtn:$('okBtn')
+};
+E.icon.innerHTML='<img src="https://i.postimg.cc/VvJQLGFK/IMG-20261008-153917-222.jpg">';
+
+/* ===== حالة بسيطة (بالذاكرة فقط) ===== */
+let savedCode='',savedValue=0,redeemed=false,coinCount=0;
+const showCoins=()=>E.count.textContent=coinCount%1?coinCount.toFixed(1):coinCount;
+
+/* ===== باقي الحالة ===== */
+let peer,conn,role,roomCode,started=0,SEED;
+let scene,camera,renderer;
+const clock=new THREE.Clock();
+const boxes=[],cps=[];
+let localMesh,remoteMesh,finishBox,finishShown,curCP=-1;
+const pos=new THREE.Vector3(),rPos=new THREE.Vector3(),startP=new THREE.Vector3(),safeP=new THREE.Vector3();
+let yaw=0,pitch=0,rYaw=0,vy=0,onG=1;
+const GRAV=22,JUMP=10,SPD=7.5,RAD=.5;
+let mx=0,my=0,jId,jcx,jcy,lId,llx,lly;
+const keys={};
+
+/* نقطة البداية في الخريطة الجديدة */
+const START={x:0,y:3.05,z:19};
+
+const rnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const code4=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[~~(Math.random()*24)]).join('');
+
+/* ===== إنشاء الغرفة تلقائياً عند فتح الصفحة ===== */
+const autoCreate=()=>{
+  role='host';roomCode=code4();SEED=~~(Math.random()*1e5)+1;
+  E.status.textContent='جاري الإنشاء...';
+  E.code.style.display='none';
+  if(peer){try{peer.destroy()}catch(e){}}
+  peer=new Peer('wmg-'+roomCode,{debug:0});
+  peer.on('open',()=>{
+    E.code.textContent=roomCode;
+    E.code.style.display='block';
+    E.status.textContent='أعط الرمز لصاحبك';
+  });
+  peer.on('connection',c=>{
+    conn=c;
+    c.on('open',()=>{c.send({t:'i',seed:SEED});start()});
+    c.on('data',onData);
+  });
+  peer.on('error',e=>{
+    if(e.type==='unavailable-id'){setTimeout(autoCreate,300);return}
+    E.status.textContent='خطأ: '+e.type;
+  });
+};
+
+/* ===== زر الانضمام (فوق يمين) ===== */
+E.joinCorner.onclick=e=>{
+  e.stopPropagation();
+  E.joinPanel.style.display='flex';
+  E.input.value='';E.input.focus();
+};
+E.joinCancel.onclick=e=>{
+  e.stopPropagation();
+  E.joinPanel.style.display='none';
+  E.status.textContent=role==='host'&&E.code.style.display==='block'?'أعط الرمز لصاحبك':'';
+};
+E.joinOk.onclick=e=>{e.stopPropagation();doJoin()};
+E.input.addEventListener('keydown',e=>{if(e.key==='Enter')doJoin()});
+
+const doJoin=()=>{
+  const c=E.input.value.trim().toUpperCase();
+  if(c.length!==4){E.status.textContent='يجب 4 أحرف';return}
+  if(peer){try{peer.destroy()}catch(e){}}
+  role='guest';roomCode=c;SEED=0;
+  E.joinPanel.style.display='none';
+  E.code.style.display='none';
+  E.status.textContent='جاري الاتصال...';
+  peer=new Peer({debug:0});
+  peer.on('open',()=>{
+    conn=peer.connect('wmg-'+c,{reliable:true});
+    conn.on('data',onData);
+    conn.on('open',()=>E.status.textContent='تم الاتصال، بانتظار المضيف...');
+  });
+  peer.on('error',e=>{
+    E.status.textContent=e.type==='peer-unavailable'?'الغرفة غير موجودة':'خطأ: '+e.type;
+    E.joinCorner.style.display='block';
+  });
+};
+
+/* ===== استقبال البيانات ===== */
+const onData=d=>{
+  if(!d||!d.t)return;
+  if(d.t==='i'){SEED=d.seed;start();return}
+  if(started&&d.t==='s'){rPos.set(d.p[0],d.p[1],d.p[2]);rYaw=d.r}
+};
+
+/* ===== بدء اللعبة ===== */
+const start=()=>{
+  if(started)return;started=1;
+  startP.set(START.x+(role==='host'?-2:2),START.y,START.z);
+  pos.copy(startP);safeP.copy(startP);
+  rPos.set(START.x+(role==='host'?2:-2),START.y,START.z);
+  yaw=pitch=vy=0;onG=1;curCP=-1;finishShown=0;
+  savedCode='';savedValue=0;redeemed=false;coinCount=0;showCoins();
+  E.menu.style.display='none';
+  E.joinPanel.style.display='none';
+  E.joinCorner.style.display='none';
+  E.joy.style.display='block';E.jump.style.display='flex';
+  E.info.style.display='block';E.info.textContent='الغرفة: '+roomCode;
+  E.hud.style.display='flex';
+  initScene();initControls();loop();
+  setInterval(()=>{if(conn&&conn.open)conn.send({t:'s',p:[pos.x,pos.y,pos.z],r:yaw})},50);
+};
+
+/* ===== المشهد ===== */
+const initScene=()=>{
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x87ceeb);
+  scene.fog=new THREE.Fog(0x87ceeb,80,250);
+  camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,500);
+  renderer=new THREE.WebGLRenderer();renderer.setSize(innerWidth,innerHeight);
+  document.body.appendChild(renderer.domElement);
+  scene.add(new THREE.AmbientLight(0xffffff,1));
+  buildMap();
+  localMesh=mkPlayer(0x8a1a1a,0xffcc44);scene.add(localMesh);
+  remoteMesh=mkPlayer(0x1a3a8a,0x00aaff);scene.add(remoteMesh);
+  scene.add(camera);
+};
+const mkPlayer=(bc,hc)=>{
+  const g=new THREE.Group();
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,1.6,10),new THREE.MeshBasicMaterial({color:bc}));
+  b.position.y=.8;g.add(b);
+  const h=new THREE.Mesh(new THREE.SphereGeometry(.35,10,8),new THREE.MeshBasicMaterial({color:hc}));
+  h.position.y=1.85;g.add(h);
+  return g;
+};
+const addPlat=(x,z,w,d,top,col)=>{
+  const b=new THREE.Mesh(new THREE.BoxGeometry(w,.8,d),new THREE.MeshBasicMaterial({color:0x8a6a3a}));
+  b.position.set(x,top-.4,z);scene.add(b);
+  const s=new THREE.Mesh(new THREE.BoxGeometry(w,.08,d),new THREE.MeshBasicMaterial({color:col}));
+  s.position.set(x,top+.04,z);scene.add(s);
+  boxes.push({x,z,rx:w/2,rz:d/2,top,bot:top-.8});
+};
+const addCP=(x,z,top,col)=>{
+  const g=new THREE.Group();
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,.15,8),new THREE.MeshBasicMaterial({color:0xffffff}));
+  b.position.y=top+.1;g.add(b);
+  const c=new THREE.Mesh(new THREE.ConeGeometry(.35,1,8),new THREE.MeshBasicMaterial({color:col}));
+  c.position.y=top+.7;g.add(c);g.position.set(x,0,z);scene.add(g);
+};
+
+/* ===== الخريطة الجديدة: برج حلزوني ===== */
+const buildMap=()=>{
+  const r=rnd(SEED);
+  /* منصة البداية */
+  addPlat(START.x,START.z,8,8,3,0x4a8a3a);
+
+  const cols=[0x00ff00,0x00ffff,0xff00ff,0xffff00,0xff8800];
+  const N=50;
+  let top=3,n=0;
+
+  for(let k=0;k<N;k++){
+    const a=Math.PI/2+0.40*k;        // زاوية الحلزون
+    const rad=12-k*0.06;             // نصف القطر يتقلص
+    const x=Math.cos(a)*rad;
+    const z=Math.sin(a)*rad;
+
+    top+=0.48+r()*0.38;              // صعود تدريجي
+    const end=k===N-1;
+
+    const w=end?5.5:2+r()*1.4;
+    const d=end?5.5:2+r()*1.4;
+
+    addPlat(x,z,w,d,end?0xffcc00:0x4a8a3a);
+    if(end)finishBox=boxes[boxes.length-1];
+
+    if(!end&&k>0&&k%8===0){
+      addCP(x,z,top,cols[n++%5]);
+      cps.push({x,z,top,id:cps.length});
+    }
+  }
+};
+
+/* ===== التحكم ===== */
+const initControls=()=>{
+  E.joy.addEventListener('touchstart',e=>{e.preventDefault();const t=e.changedTouches[0];jId=t.identifier;const r=E.joy.getBoundingClientRect();jcx=r.left+r.width/2;jcy=r.top+r.height/2},{passive:false});
+  E.joy.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    for(const t of e.changedTouches)if(t.identifier===jId){
+      let dx=t.clientX-jcx,dy=t.clientY-jcy,d=Math.hypot(dx,dy);
+      if(d>60){dx=dx/d*60;dy=dy/d*60}
+      E.stick.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+      mx=dx/60;my=dy/60;
+    }
+  },{passive:false});
+  const endJ=e=>{for(const t of e.changedTouches)if(t.identifier===jId){jId=null;mx=my=0;E.stick.style.transform='translate(-50%,-50%)'}};
+  E.joy.addEventListener('touchend',endJ);E.joy.addEventListener('touchcancel',endJ);
+
+  document.body.addEventListener('touchstart',e=>{
+    for(const t of e.changedTouches){
+      if(t.target.closest?.('#joy,#jump,#roomInfo,#coinHud,#redeemModal'))continue;
+      if(t.clientX>innerWidth/2&&lId==null){lId=t.identifier;llx=t.clientX;lly=t.clientY}
+    }
+  },{passive:false});
+  document.body.addEventListener('touchmove',e=>{
+    for(const t of e.changedTouches)if(t.identifier===lId){
+      const dx=t.clientX-llx,dy=t.clientY-lly;llx=t.clientX;lly=t.clientY;
+      yaw-=dx*.005;pitch=Math.max(-1,Math.min(1,pitch-dy*.005));
+    }
+  },{passive:false});
+  document.body.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(t.identifier===lId)lId=null});
+
+  E.jump.addEventListener('touchstart',e=>{e.preventDefault();doJump()},{passive:false});
+  E.jump.addEventListener('mousedown',e=>{e.preventDefault();doJump()});
+  addEventListener('keydown',e=>{keys[e.code]=1;if(e.code==='Space')doJump()});
+  addEventListener('keyup',e=>keys[e.code]=0);
+  document.body.addEventListener('mousemove',e=>{
+    if(document.pointerLockElement===document.body){yaw-=e.movementX*.003;pitch=Math.max(-1,Math.min(1,pitch-e.movementY*.003))}
+  });
+  renderer.domElement.addEventListener('click',()=>renderer.domElement.requestPointerLock?.());
+
+  E.redeem.onclick=e=>{e.stopPropagation();openRedeem()};
+  E.view.onclick=e=>{e.stopPropagation();openSaved()};
+  E.copy.onclick=e=>{e.stopPropagation();doCopy()};
+  E.okBtn.onclick=e=>{e.stopPropagation();E.okBtn._fn?.()};
+  E.modal.onclick=e=>{if(e.target===E.modal)closeModal()};
+};
+const doJump=()=>{if(started&&onG){vy=JUMP;onG=0}};
+
+/* ===== الفيزياء ===== */
+const update=dt=>{
+  let kx=0,kz=0;
+  if(keys.KeyW||keys.ArrowUp)kz++;if(keys.KeyS||keys.ArrowDown)kz--;
+  if(keys.KeyA||keys.ArrowLeft)kx--;if(keys.KeyD||keys.ArrowRight)kx++;
+  kx+=mx;kz-=my;
+  const l=Math.hypot(kx,kz);if(l>1){kx/=l;kz/=l}
+  const fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
+  const py=pos.y;
+  let nx=pos.x+(fx*kz+rx*kx)*SPD*dt,nz=pos.z+(fz*kz+rz*kx)*SPD*dt;
+
+  for(const b of boxes){
+    if(pos.y>=b.top-.1||pos.y+1.6<=b.bot+.05)continue;
+    const dx=nx-b.x,dz=nz-b.z;
+    if(Math.abs(dx)<b.rx+RAD&&Math.abs(dz)<b.rz+RAD){
+      const ox=b.rx+RAD-Math.abs(dx),oz=b.rz+RAD-Math.abs(dz);
+      if(ox<oz)nx+=dx>0?ox:-ox;else nz+=dz>0?oz:-oz;
+    }
+  }
+  pos.x=nx;pos.z=nz;
+  vy-=GRAV*dt;pos.y+=vy*dt;
+
+  if(vy<=0){
+    let bt=-1e9,bb=null;
+    for(const b of boxes){
+      if(Math.abs(pos.x-b.x)<b.rx+RAD*.6&&Math.abs(pos.z-b.z)<b.rz+RAD*.6&&py>=b.top-.05&&pos.y<=b.top+.05&&b.top>bt){bt=b.top;bb=b}
+    }
+    if(bb){
+      pos.y=bt;vy=0;onG=1;
+      for(const cp of cps)if(Math.abs(cp.x-bb.x)<.5&&Math.abs(cp.z-bb.z)<.5&&Math.abs(cp.top-bb.top)<.5){
+        if(cp.id>curCP){curCP=cp.id;safeP.set(cp.x,cp.top+.05,cp.z);toast_('نقطة حفظ ✔')}
+        break;
+      }
+    } else onG=0;
+  } else onG=0;
+
+  if(pos.y<-25){pos.copy(curCP<0?startP:safeP);vy=0;onG=1}
+
+  if(finishBox&&!finishShown&&Math.abs(pos.x-finishBox.x)<finishBox.rx+.6&&Math.abs(pos.z-finishBox.z)<finishBox.rz+.6&&pos.y>=finishBox.top-.3){
+    finishShown=1;
+    if(!savedCode){
+      const [c,v]=POOL[~~(Math.random()*POOL.length)];
+      savedCode=c;savedValue=v;coinCount=v;showCoins();
+      toast_('لقد فزت! 🎉');
+      setTimeout(()=>showModal('كود الاسترداد',savedCode,closeModal),700);
+    } else toast_('لقد فزت! 🎉');
+  }
+};
+const toast_=m=>{E.toast.textContent=m;E.toast.style.display='block';clearTimeout(E.toast._t);E.toast._t=setTimeout(()=>E.toast.style.display='none',1300)};
+
+/* ===== الكود ===== */
+const showModal=(t,c,fn)=>{E.rTitle.textContent=t;E.rCode.textContent=c;E.modal.style.display='flex';E.okBtn._fn=fn||closeModal;E.copy.focus()};
+const openRedeem=()=>{
+  if(!savedCode){toast_('لم تفز بعد');return}
+  if(redeemed){toast_('تم الاسترداد مسبقاً');return}
+  showModal('كود الاسترداد',savedCode,()=>{redeemed=true;coinCount=0;showCoins();closeModal();toast_('تم الاسترداد')});
+};
+const openSaved=()=>{if(!savedCode){toast_('لا يوجد كود');return}showModal('الكود المحفوظ',savedCode,closeModal)};
+const doCopy=()=>{
+  const t=E.rCode.textContent;
+  if(navigator.clipboard?.writeText)navigator.clipboard.writeText(t).then(ok_).catch(()=>fb(t));
+  else fb(t);
+};
+const fb=t=>{
+  const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';
+  document.body.appendChild(a);a.focus();a.select();a.setSelectionRange(0,t.length);
+  try{document.execCommand('copy')}catch(e){}
+  document.body.removeChild(a);ok_();
+};
+const ok_=()=>{E.copy.textContent='تم ✔';setTimeout(()=>E.copy.textContent='نسخ',1200)};
+const closeModal=()=>E.modal.style.display='none';
+
+/* ===== الحلقة ===== */
+const loop=()=>{
+  requestAnimationFrame(loop);
+  if(!started)return;
+  update(Math.min(clock.getDelta(),.05));
+  localMesh.position.copy(pos);localMesh.rotation.y=yaw+Math.PI;
+  remoteMesh.position.copy(rPos);remoteMesh.rotation.y=rYaw+Math.PI;
+  const D=7,e=Math.max(.12,Math.min(1.15,.45-pitch));
+  camera.position.set(pos.x+Math.sin(yaw)*D*Math.cos(e),pos.y+1.4+D*Math.sin(e),pos.z+Math.cos(yaw)*D*Math.cos(e));
+  camera.lookAt(pos.x,pos.y+1.3,pos.z);
+  renderer.render(scene,camera);
+};
+addEventListener('resize',()=>{
+  if(!camera)return;
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
+});
+
+/* ===== تشغيل تلقائي ===== */
+autoCreate();
+</script>
+</body>
+</html>
