@@ -53,7 +53,7 @@ let yaw=0,pitch=0,yaw2=0,vy=0,ground=true,hurt=0;
 let mx=0,my=0,joyId=null,jcx=0,jcy=0,lookId=null,lx=0,ly=0;
 const keys={};
 let savedCode='',coins=0;
-let doubleJump=false;   /* دبل جمب متاح؟ */
+let doubleJump=true;
 const GRAV=22,JUMP=10,SPD=7.5,R=0.5,SX=0,SY=3.05,SZ=19;
 
 const code4=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[~~(Math.random()*24)]).join('');
@@ -90,7 +90,7 @@ function startGame(){
   start.set(SX,SY,SZ);
   pos.copy(start);save.copy(start);pos2.copy(start);
   yaw=pitch=vy=0;ground=true;lastCP=-1;won=false;stage=2;hurt=0;
-  doubleJump=true;    /* دبل جمب عند البداية (المرحلة 2) */
+  doubleJump=true;
   savedCode='';coins=0;showCoins();
   $('menu').style.display='none';$('joinBtn').style.display='none';
   $('joy').style.display='block';$('jump').style.display='block';
@@ -151,7 +151,7 @@ function buildMap(){
   plat(SX,SZ,8,8,3,0x4a8a3a,2);
 
   for(let k=0;k<50;k++){
-    const st=Math.floor(k/10)+2;   /* 2..6 */
+    const st=Math.floor(k/10)+2;
     const first=k%10===0, last=k===49;
 
     const x=Math.sin(k*0.5)*6;
@@ -228,12 +228,10 @@ function bindControls(){
   $('closeBtn').onclick=closeModal;
 }
 
-/* زر النط: أصفر = عندك دبل جمب، أبيض = ما عندك */
 function jumpBtnColor(){
   $('jump').style.background = doubleJump ? '#ffe66d' : '#fff';
 }
 
-/* القفز: قفزة عادية + قفزة دبل جمب إذا متاحة */
 function jump(){
   if(!run)return;
   if(ground){ vy=JUMP; ground=false; return; }
@@ -272,13 +270,10 @@ function update(dt){
     }
     if(hit){
       pos.y=best;vy=0;ground=true;
-      /* الوصول لمرحلة جديدة = دبل جمب مرة واحدة */
       if(hit.st && hit.st !== stage){
         stage=hit.st;
         $('stage').textContent='المرحلة: '+stage;
-        doubleJump=true;
-        jumpBtnColor();
-        toast('وصلت مرحلة '+stage+' — دبل جمب ⚡');
+        toast('وصلت مرحلة '+stage);
       }
       for(const cp of cps){
         if(Math.abs(cp.x-hit.x)<.6&&Math.abs(cp.z-hit.z)<.6&&Math.abs(cp.top-hit.top)<.5){
@@ -305,7 +300,9 @@ function update(dt){
 }
 function die(){
   pos.copy(lastCP<0?start:save);vy=0;ground=true;hurt=1;
-  toast('آخ! 💥');
+  doubleJump=true;              /* الدبل جمب يرجع عند الموت */
+  jumpBtnColor();
+  toast('آخ! 💥 — دبل جمب ⚡');
 }
 
 let tTimer;
