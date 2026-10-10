@@ -17,7 +17,7 @@ canvas{display:block}
 #joinBox button{padding:12px 24px;border:0;border-radius:8px;font-size:15px;font-weight:bold;background:#fff;color:#2a1060}
 #joy{position:absolute;bottom:25px;left:25px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid #fff;z-index:10;display:none}
 #stick{position:absolute;top:50%;left:50%;width:55px;height:55px;border-radius:50%;background:#fff;transform:translate(-50%,-50%)}
-#jump{position:absolute;bottom:35px;right:35px;width:95px;height:95px;border-radius:50%;background:#fff;color:#2a1060;border:0;font-size:18px;font-weight:bold;z-index:10;display:none}
+#jump{position:absolute;bottom:35px;right:35px;width:95px;height:95px;border-radius:50%;background:#fff;color:#2a1060;border:4px solid #ffcc00;font-size:18px;font-weight:bold;z-index:10;display:none;transition:background .15s}
 #info{position:absolute;top:15px;left:15px;color:#fff;font-weight:bold;z-index:15;display:none;text-shadow:1px 1px 3px #000}
 #stage{position:absolute;top:50px;left:15px;color:#ffe66d;font-weight:bold;background:rgba(0,0,0,.5);padding:6px 14px;border-radius:14px;z-index:15;display:none}
 #toast{position:absolute;top:35%;width:100%;text-align:center;color:#ffe66d;font-size:26px;font-weight:bold;text-shadow:2px 2px 5px #000;z-index:12;display:none}
@@ -53,11 +53,11 @@ let yaw=0,pitch=0,yaw2=0,vy=0,ground=true,hurt=0;
 let mx=0,my=0,joyId=null,jcx=0,jcy=0,lookId=null,lx=0,ly=0;
 const keys={};
 let savedCode='',coins=0;
+let doubleJump=false;   /* دبل جمب متاح؟ */
 const GRAV=22,JUMP=10,SPD=7.5,R=0.5,SX=0,SY=3.05,SZ=19;
 
 const code4=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[~~(Math.random()*24)]).join('');
 
-/* إنشاء غرفة */
 function host(){
   isHost=true;code=code4();seed=~~(Math.random()*1e5)+1;
   if(peer)try{peer.destroy()}catch(e){}
@@ -85,23 +85,24 @@ function onData(d){
   if(d.t==='state'&&run){pos2.set(d.p[0],d.p[1],d.p[2]);yaw2=d.r}
 }
 
-/* بدء اللعبة */
 function startGame(){
   if(run)return;run=true;
-  start.set(SX+(isHost?-2:2),SY,SZ);pos.copy(start);save.copy(start);
-  pos2.set(SX+(isHost?2:-2),SY,SZ);
+  start.set(SX,SY,SZ);
+  pos.copy(start);save.copy(start);pos2.copy(start);
   yaw=pitch=vy=0;ground=true;lastCP=-1;won=false;stage=2;hurt=0;
+  doubleJump=true;    /* دبل جمب عند البداية (المرحلة 2) */
   savedCode='';coins=0;showCoins();
   $('menu').style.display='none';$('joinBtn').style.display='none';
   $('joy').style.display='block';$('jump').style.display='block';
   $('info').style.display='block';$('info').textContent='الغرفة: '+code;
   $('stage').style.display='block';$('stage').textContent='المرحلة: 2';
   $('coins').style.display='flex';
+  jumpBtnColor();
   buildScene();buildMap();bindControls();loop();
+  setTimeout(()=>toast('وصلت مرحلة 2 — دبل جمب ⚡'), 500);
   setInterval(()=>{if(conn&&conn.open)conn.send({t:'state',p:[pos.x,pos.y,pos.z],r:yaw})},50);
 }
 
-/* المشهد */
 function buildScene(){
   scene=new THREE.Scene();
   scene.background=new THREE.Color(0x87ceeb);
@@ -144,48 +145,40 @@ function sign(txt,x,y,z,col){
   m.position.set(x,y,z);scene.add(m);signs.push(m);
 }
 
-/* الخريطة: خط مستقيم متعرج + مسافات كبيرة */
 function buildMap(){
   const cols=[0x00ff00,0x00ffff,0xff00ff,0xffff00,0xff8800];
   let top=3,cpCount=0;
   plat(SX,SZ,8,8,3,0x4a8a3a,2);
 
   for(let k=0;k<50;k++){
-    const st=Math.floor(k/10)+2;      // يبدأ من 2
-    const sNum=st;
+    const st=Math.floor(k/10)+2;   /* 2..6 */
     const first=k%10===0, last=k===49;
 
-    /* خط مستقيم: z ينقص بانتظام + تمويج x */
     const x=Math.sin(k*0.5)*6;
     const z=SZ-8-k*4.2;
 
-    /* ارتفاعات أكثر حدة = أصعب */
     const amp = st<=3 ? 1.9 : 2.4;
     top += (Math.random()*2-1)*amp + 0.5;
     top = Math.max(2.5, Math.min(36, top));
 
-    /* منصات أصغر = أصعب */
     const w = last ? 5.5 : 2.0 + Math.random()*0.7;
     const d = last ? 5.5 : 2.0 + Math.random()*0.7;
-    plat(x,z,w,d,top,last?0xffcc00:0x4a8a3a,sNum);
+    plat(x,z,w,d,top,last?0xffcc00:0x4a8a3a,st);
     if(last)finish=plats[plats.length-1];
 
-    /* لوحة المرحلة */
     if(first){
       const c=['#7dffff','#ff7dff','#ffff7d','#ffb37d','#ff5555'][st-2];
-      sign('المرحلة '+sNum,x,top+3.6,z,c);
+      sign('المرحلة '+st,x,top+3.6,z,c);
     }
 
-    /* نقطة حفظ كل 8 منصات */
     if(!last&&k>0&&k%8===0){
       checkpoint(x,z,top,cols[cpCount%5]);
       cps.push({x,z,top,id:cpCount});
       cpCount++;
     }
 
-    /* شوك أكثر على كل منصة */
     if(!last){
-      const n=3+~~(Math.random()*3);   // 3-5 شوكات
+      const n=3+~~(Math.random()*3);
       for(let i=0;i<n;i++){
         const ang=Math.random()*Math.PI*2;
         spike(x+Math.cos(ang)*0.9,z+Math.sin(ang)*0.9,top);
@@ -194,7 +187,6 @@ function buildMap(){
   }
 }
 
-/* التحكم */
 function bindControls(){
   $('joy').addEventListener('touchstart',e=>{
     e.preventDefault();const t=e.changedTouches[0];joyId=t.identifier;
@@ -235,9 +227,23 @@ function bindControls(){
   $('copyBtn').onclick=copyCode;
   $('closeBtn').onclick=closeModal;
 }
-const jump=()=>{if(run&&ground){vy=JUMP;ground=false}};
 
-/* الفيزياء */
+/* زر النط: أصفر = عندك دبل جمب، أبيض = ما عندك */
+function jumpBtnColor(){
+  $('jump').style.background = doubleJump ? '#ffe66d' : '#fff';
+}
+
+/* القفز: قفزة عادية + قفزة دبل جمب إذا متاحة */
+function jump(){
+  if(!run)return;
+  if(ground){ vy=JUMP; ground=false; return; }
+  if(doubleJump){
+    vy=JUMP; doubleJump=false;
+    jumpBtnColor();
+    toast('دبل جمب! ⚡');
+  }
+}
+
 function update(dt){
   if(hurt>0)hurt-=dt;
   let kx=0,kz=0;
@@ -266,7 +272,14 @@ function update(dt){
     }
     if(hit){
       pos.y=best;vy=0;ground=true;
-      if(hit.st&&hit.st!==stage){stage=hit.st;$('stage').textContent='المرحلة: '+stage;toast('المرحلة '+stage)}
+      /* الوصول لمرحلة جديدة = دبل جمب مرة واحدة */
+      if(hit.st && hit.st !== stage){
+        stage=hit.st;
+        $('stage').textContent='المرحلة: '+stage;
+        doubleJump=true;
+        jumpBtnColor();
+        toast('وصلت مرحلة '+stage+' — دبل جمب ⚡');
+      }
       for(const cp of cps){
         if(Math.abs(cp.x-hit.x)<.6&&Math.abs(cp.z-hit.z)<.6&&Math.abs(cp.top-hit.top)<.5){
           if(cp.id>lastCP){lastCP=cp.id;save.set(cp.x,cp.top+.05,cp.z);toast('نقطة حفظ ✔')}
@@ -291,13 +304,14 @@ function update(dt){
   }
 }
 function die(){
-  pos.copy(lastCP<0?start:save);vy=0;ground=true;hurt=1;toast('آخ! 💥');
+  pos.copy(lastCP<0?start:save);vy=0;ground=true;hurt=1;
+  toast('آخ! 💥');
 }
 
 let tTimer;
 function toast(m){
   $('toast').textContent=m;$('toast').style.display='block';
-  clearTimeout(tTimer);tTimer=setTimeout(()=>$('toast').style.display='none',1200);
+  clearTimeout(tTimer);tTimer=setTimeout(()=>$('toast').style.display='none',1500);
 }
 function showCoins(){$('coinNum').textContent=coins}
 function showModal(t,c){$('modalTitle').textContent=t;$('modalCode').textContent=c;$('modal').style.display='flex'}
