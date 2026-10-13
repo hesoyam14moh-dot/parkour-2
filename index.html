@@ -9,24 +9,25 @@
 body{overflow:hidden;background:#000;font-family:Arial;touch-action:none;user-select:none}
 canvas{display:block}
 #menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;color:#fff;background:#2a1060;z-index:100}
-#code{font-size:40px;letter-spacing:8px;font-weight:bold}
-#msg{color:#c8d4ff}
+#code{font-size:40px;letter-spacing:8px;font-weight:bold;display:none}
+#msg{color:#c8d4ff;text-align:center;padding:0 20px}
 #joinBtn{position:fixed;top:15px;right:15px;z-index:120;background:#fff;color:#2a1060;padding:12px 22px;border:0;border-radius:22px;font-size:15px;font-weight:bold}
 #joinBox{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:15px;background:rgba(0,0,0,.9);z-index:130;color:#fff}
 #joinBox input{width:200px;padding:15px;font-size:22px;text-align:center;letter-spacing:6px;text-transform:uppercase;border:2px solid #fff;border-radius:8px;background:#000;color:#fff}
 #joinBox button{padding:12px 24px;border:0;border-radius:8px;font-size:15px;font-weight:bold;background:#fff;color:#2a1060}
 #joy{position:absolute;bottom:25px;left:25px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid #fff;z-index:10;display:none}
 #stick{position:absolute;top:50%;left:50%;width:55px;height:55px;border-radius:50%;background:#fff;transform:translate(-50%,-50%)}
-#jump{position:absolute;bottom:35px;right:35px;width:95px;height:95px;border-radius:50%;background:#fff;color:#2a1060;border:4px solid #ffcc00;font-size:18px;font-weight:bold;z-index:10;display:none;transition:background .15s}
+#jump{position:absolute;bottom:35px;right:35px;width:95px;height:95px;border-radius:50%;background:#ffe66d;color:#2a1060;border:0;font-size:18px;font-weight:bold;z-index:10;display:none;transition:background .15s}
+#gift{position:absolute;bottom:145px;right:55px;width:55px;height:55px;border-radius:50%;background:#fff;color:#2a1060;border:2px solid #ff66aa;font-size:24px;z-index:10;display:none}
 #info{position:absolute;top:15px;left:15px;color:#fff;font-weight:bold;z-index:15;display:none;text-shadow:1px 1px 3px #000}
-#stage{position:absolute;top:50px;left:15px;color:#ffe66d;font-weight:bold;background:rgba(0,0,0,.5);padding:6px 14px;border-radius:14px;z-index:15;display:none}
+#stage{position:absolute;top:50px;left:15px;color:#ffe66d;font-weight:bold;background:rgba(0,0,0,.5);padding:6px 14px;border-radius:14px;z-index:15;display:none;cursor:pointer}
 #toast{position:absolute;top:35%;width:100%;text-align:center;color:#ffe66d;font-size:26px;font-weight:bold;text-shadow:2px 2px 5px #000;z-index:12;display:none}
 #coins{position:absolute;top:15px;right:15px;display:none;align-items:center;gap:10px;background:rgba(0,0,0,.6);padding:10px 16px;border-radius:26px;color:#fff;font-weight:bold;font-size:20px;z-index:15}
 #coins img{width:42px;height:42px;border-radius:50%}
 #coins button{background:#fff;color:#2a1060;border:0;padding:8px 14px;border-radius:16px;font-weight:bold;font-size:13px}
 #modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:200}
-#modalBox{background:#1a0a3a;border:2px solid #fff;padding:25px;border-radius:16px;text-align:center;color:#fff;max-width:320px;width:90%}
-#modalCode{font-size:28px;font-weight:bold;letter-spacing:6px;color:#ffe66d;background:rgba(0,0,0,.4);padding:14px;border-radius:10px;margin:15px 0;font-family:monospace}
+#modalBox{background:#1a0a3a;border:2px solid #fff;padding:25px;border-radius:16px;text-align:center;color:#fff;max-width:340px;width:90%}
+#modalCode{font-size:22px;font-weight:bold;color:#ffe66d;background:rgba(0,0,0,.4);padding:14px;border-radius:10px;margin:15px 0;font-family:monospace;word-break:break-all;user-select:text;-webkit-user-select:text}
 #modalBox button{border:0;padding:12px 22px;border-radius:10px;font-size:15px;font-weight:bold;background:#fff;color:#1a0a3a;margin:0 5px}
 </style>
 </head>
@@ -36,6 +37,7 @@ canvas{display:block}
 <div id="joinBox"><input id="joinInput" placeholder="----" maxlength="4"><div><button id="joinOk">دخول</button><button id="joinCancel">إلغاء</button></div></div>
 <div id="joy"><div id="stick"></div></div>
 <button id="jump">نط</button>
+<button id="gift">🎁</button>
 <div id="info"></div><div id="stage"></div><div id="toast"></div>
 <div id="coins"><img src="https://i.postimg.cc/VvJQLGFK/IMG-20261008-153917-222.jpg"><span id="coinNum">0</span><button id="redeemBtn">استرداد</button><button id="viewBtn">الكود</button></div>
 <div id="modal"><div id="modalBox"><h2 id="modalTitle">الكود</h2><div id="modalCode">-------</div><button id="copyBtn">نسخ</button><button id="closeBtn">موافق</button></div></div>
@@ -44,8 +46,25 @@ canvas{display:block}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.0/peerjs.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const POOL=['6767676','HAHAHAH','HESOYAM','MOKHSNB','VONJFTG'];
-let peer,conn,isHost,code,seed,run=false;
+
+const CFG={config:{iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'}
+]}};
+const ERR={'peer-unavailable':'الغرفة غير موجودة','network':'مشكلة بالشبكة','server-error':'خطأ بالخادم','socket-error':'خطأ بالاتصال','socket-closed':'انقطع الاتصال','unavailable-id':'الرمز مستخدم','browser-incompatible':'المتصفح غير مدعوم'};
+const em=t=>ERR[t]||('خطأ: '+t);
+
+const ENG='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const CHN='天地人山水火木金土日月星辰风雨雷电云雪霜冰';
+function makeCode(){
+  const L=()=>ENG[~~(Math.random()*26)];
+  const C=()=>CHN[~~(Math.random()*CHN.length)];
+  return Math.random()<.5 ? '?#'+L()+'=(11)'+C()+'!' : L()+L()+'=(11)!$#'+C();
+}
+
+let peer,conn,isHost,code,seed,run=false,joinTimer;
 let scene,cam,ren,clock,me,other,finish,won=false,stage=2,lastCP=-1;
 const plats=[],spikes=[],cps=[],signs=[];
 const pos=new THREE.Vector3(),pos2=new THREE.Vector3(),start=new THREE.Vector3(),save=new THREE.Vector3();
@@ -53,66 +72,73 @@ let yaw=0,pitch=0,yaw2=0,vy=0,ground=true,hurt=0;
 let mx=0,my=0,joyId=null,jcx=0,jcy=0,lookId=null,lx=0,ly=0;
 const keys={};
 let savedCode='',coins=0;
-let doubleJump=true, infiniteJump=false;
-const GRAV=22,JUMP=10,SPD=7.5,R=0.5,SX=0,SY=3.05,SZ=19;
+let maxCharges=1,charges=1;
+let jumpTaps=0,lastJumpTime=0;
+const GRAV=22,JUMP=10,SPD=7.5,R=.5,SX=0,SY=3.05,SZ=19;
 
-/* مولد أرقام عشوائية بنفس البذرة (نفس الماب للاثنين) */
 let rng;
-function initRng(s){
-  let a = s || 1;
-  rng = function(){
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
+function initRng(s){let a=s||1;rng=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const code4=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[~~(Math.random()*24)]).join('');
 
 function host(){
   isHost=true;code=code4();seed=~~(Math.random()*1e5)+1;
+  $('msg').textContent='جاري الإنشاء...';$('code').style.display='none';
   if(peer)try{peer.destroy()}catch(e){}
-  peer=new Peer('wmg-'+code,{debug:0});
-  peer.on('open',()=>{$('code').textContent=code;$('msg').textContent='أعط الرمز لصاحبك'});
-  peer.on('connection',c=>{conn=c;c.on('open',()=>{c.send({t:'init',seed});startGame()});c.on('data',onData)});
-  peer.on('error',e=>{if(e.type==='unavailable-id')setTimeout(host,300);else $('msg').textContent='خطأ: '+e.type});
+  peer=new Peer('wmg-'+code,CFG);
+  peer.on('open',()=>{$('code').textContent=code;$('code').style.display='block';$('msg').textContent='أعط الرمز لصاحبك'});
+  peer.on('connection',c=>{conn=c;c.on('open',()=>{try{c.send({t:'init',seed})}catch(e){};startGame()});c.on('data',onData)});
+  peer.on('error',e=>{if(e.type==='unavailable-id'){setTimeout(host,500);return}$('msg').textContent=em(e.type)});
 }
+
 $('joinBtn').onclick=()=>{$('joinBox').style.display='flex';$('joinInput').focus()};
-$('joinCancel').onclick=()=>$('joinBox').style.display='none';
+$('joinCancel').onclick=()=>{$('joinBox').style.display='none';$('joinInput').value=''};
 $('joinOk').onclick=join;
 $('joinInput').onkeydown=e=>{if(e.key==='Enter')join()};
 function join(){
   const c=$('joinInput').value.trim().toUpperCase();
-  if(c.length!==4)return;
+  if(c.length!==4){$('joinBox').style.display='none';$('msg').textContent='الرمز 4 أحرف';setTimeout(host,1500);return}
   if(peer)try{peer.destroy()}catch(e){}
+  clearTimeout(joinTimer);
   isHost=false;code=c;$('joinBox').style.display='none';$('msg').textContent='جاري الاتصال...';
-  peer=new Peer({debug:0});
-  peer.on('open',()=>{conn=peer.connect('wmg-'+c,{reliable:true});conn.on('data',onData)});
-  peer.on('error',e=>$('msg').textContent='خطأ: '+e.type);
+  peer=new Peer(CFG);
+  peer.on('open',()=>{
+    conn=peer.connect('wmg-'+c,{reliable:true});
+    conn.on('open',()=>{$('msg').textContent='بانتظار المضيف...'});
+    conn.on('data',onData);
+    clearTimeout(joinTimer);
+    joinTimer=setTimeout(()=>{if(!run)$('msg').textContent='لم يستجب المضيف'},15000);
+  });
+  peer.on('error',e=>{clearTimeout(joinTimer);$('msg').textContent=em(e.type)});
 }
 function onData(d){
   if(!d||!d.t)return;
-  if(d.t==='init'){seed=d.seed;startGame()}
+  if(d.t==='init'){clearTimeout(joinTimer);seed=d.seed;startGame()}
   if(d.t==='state'&&run){pos2.set(d.p[0],d.p[1],d.p[2]);yaw2=d.r}
+  /* استقبل هدية دبل جمب */
+  if(d.t==='gift'&&run){
+    charges=maxCharges;
+    jumpColor();
+    toast('🎁 وصلك دبل جمب من صاحبك!');
+  }
 }
 
 function startGame(){
   if(run)return;run=true;
-  initRng(seed);   /* نفس البذرة = نفس الماب للاثنين */
+  initRng(seed);
   start.set(SX,SY,SZ);
   pos.copy(start);save.copy(start);pos2.copy(start);
   yaw=pitch=vy=0;ground=true;lastCP=-1;won=false;stage=2;hurt=0;
-  doubleJump=true;infiniteJump=false;
+  maxCharges=1;charges=1;jumpTaps=0;
   savedCode='';coins=0;showCoins();
   $('menu').style.display='none';$('joinBtn').style.display='none';
   $('joy').style.display='block';$('jump').style.display='block';
+  $('gift').style.display='block';
   $('info').style.display='block';$('info').textContent='الغرفة: '+code;
   $('stage').style.display='block';$('stage').textContent='المرحلة: 2';
   $('coins').style.display='flex';
-  jumpBtnColor();
+  jumpColor();
   buildScene();buildMap();bindControls();loop();
-  setTimeout(()=>toast('وصلت مرحلة 2 — دبل جمب ⚡'), 500);
+  setTimeout(()=>toast('وصلت مرحلة 2 — دبل جمب ⚡'),500);
   setInterval(()=>{if(conn&&conn.open)conn.send({t:'state',p:[pos.x,pos.y,pos.z],r:yaw})},50);
 }
 
@@ -141,7 +167,8 @@ function plat(x,z,w,d,top,col,st){
 }
 function spike(x,z,top){
   const s=new THREE.Mesh(new THREE.ConeGeometry(.3,.9,8),new THREE.MeshBasicMaterial({color:0xff2222}));
-  s.position.set(x,top+.55,z);scene.add(s);spikes.push({x,z,top,r:.55});
+  s.position.set(x,top+.55,z);scene.add(s);
+  spikes.push({x,z,top,r:.55,mesh:s});
 }
 function checkpoint(x,z,top,col){
   const c=new THREE.Mesh(new THREE.ConeGeometry(.35,1,8),new THREE.MeshBasicMaterial({color:col}));
@@ -162,39 +189,28 @@ function buildMap(){
   const cols=[0x00ff00,0x00ffff,0xff00ff,0xffff00,0xff8800];
   let top=3,cpCount=0;
   plat(SX,SZ,8,8,3,0x4a8a3a,2);
-
   for(let k=0;k<50;k++){
     const st=Math.floor(k/10)+2;
-    const first=k%10===0, last=k===49;
-
-    const x=Math.sin(k*0.5)*6;
-    const z=SZ-8-k*4.2;
-
-    const amp = st<=3 ? 1.9 : 2.4;
-    top += (rng()*2-1)*amp + 0.5;   /* rng بدل Math.random */
-    top = Math.max(2.5, Math.min(36, top));
-
-    const w = last ? 5.5 : 2.0 + rng()*0.7;
-    const d = last ? 5.5 : 2.0 + rng()*0.7;
+    const first=k%10===0,last=k===49;
+    const x=Math.sin(k*.5)*6,z=SZ-8-k*4.2;
+    top+=(rng()*2-1)*(st<=3?1.9:2.4)+.5;
+    top=Math.max(2.5,Math.min(36,top));
+    const w=last?5.5:2+rng()*.7,d=last?5.5:2+rng()*.7;
     plat(x,z,w,d,top,last?0xffcc00:0x4a8a3a,st);
     if(last)finish=plats[plats.length-1];
-
     if(first){
       const c=['#7dffff','#ff7dff','#ffff7d','#ffb37d','#ff5555'][st-2];
       sign('المرحلة '+st,x,top+3.6,z,c);
     }
-
     if(!last&&k>0&&k%8===0){
       checkpoint(x,z,top,cols[cpCount%5]);
-      cps.push({x,z,top,id:cpCount});
-      cpCount++;
+      cps.push({x,z,top,id:cpCount});cpCount++;
     }
-
     if(!last){
       const n=3+~~(rng()*3);
       for(let i=0;i<n;i++){
         const ang=rng()*Math.PI*2;
-        spike(x+Math.cos(ang)*0.9,z+Math.sin(ang)*0.9,top);
+        spike(x+Math.cos(ang)*.9,z+Math.sin(ang)*.9,top);
       }
     }
   }
@@ -209,17 +225,17 @@ function bindControls(){
     e.preventDefault();
     for(const t of e.changedTouches){
       if(t.identifier!==joyId)continue;
-      let dx=t.clientX-jcx,dy=t.clientY-jcy;const dist=Math.hypot(dx,dy);
-      if(dist>60){dx=dx/dist*60;dy=dy/dist*60}
+      let dx=t.clientX-jcx,dy=t.clientY-jcy;const d=Math.hypot(dx,dy);
+      if(d>60){dx=dx/d*60;dy=dy/d*60}
       $('stick').style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
       mx=dx/60;my=dy/60;
     }
   },{passive:false});
-  const endJoy=e=>{for(const t of e.changedTouches)if(t.identifier===joyId){joyId=null;mx=my=0;$('stick').style.transform='translate(-50%,-50%)'}};
-  $('joy').addEventListener('touchend',endJoy);$('joy').addEventListener('touchcancel',endJoy);
+  const endJ=e=>{for(const t of e.changedTouches)if(t.identifier===joyId){joyId=null;mx=my=0;$('stick').style.transform='translate(-50%,-50%)'}};
+  $('joy').addEventListener('touchend',endJ);$('joy').addEventListener('touchcancel',endJ);
   document.body.addEventListener('touchstart',e=>{
     for(const t of e.changedTouches){
-      if(t.target.closest('#joy,#jump,#info,#stage,#coins,#modal'))continue;
+      if(t.target.closest('#joy,#jump,#gift,#info,#stage,#coins,#modal'))continue;
       if(t.clientX>innerWidth/2&&lookId===null){lookId=t.identifier;lx=t.clientX;ly=t.clientY}
     }
   },{passive:false});
@@ -233,29 +249,59 @@ function bindControls(){
   document.body.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(t.identifier===lookId)lookId=null});
   $('jump').addEventListener('touchstart',e=>{e.preventDefault();jump()},{passive:false});
   $('jump').addEventListener('mousedown',e=>{e.preventDefault();jump()});
+
+  /* 🎁 إرسال دبل جمب للصاحب */
+  $('gift').addEventListener('touchstart',e=>{e.preventDefault();sendGift()},{passive:false});
+  $('gift').addEventListener('mousedown',e=>{e.preventDefault();sendGift()});
+
   addEventListener('keydown',e=>{keys[e.code]=1;if(e.code==='Space')jump()});
   addEventListener('keyup',e=>keys[e.code]=0);
+
+  /* السر: نط مرتين + كبسة على المرحلة → اختفاء الشوك */
+  $('stage').addEventListener('click',e=>{
+    e.stopPropagation();
+    if(!run)return;
+    if(jumpTaps>=2){
+      for(const s of spikes) scene.remove(s.mesh);
+      spikes.length=0;
+      jumpTaps=0;
+      toast('🔓 كل الأشواك اختفت! 🔥');
+    }else{
+      toast('انط مرتين بعدين كبس هنا');
+    }
+  });
+
   $('redeemBtn').onclick=redeem;
   $('viewBtn').onclick=showSaved;
-  $('copyBtn').onclick=copyCode;
   $('closeBtn').onclick=closeModal;
 }
 
-/* ألوان الزر: أخضر=لا نهائي، أصفر=دبل جمب، أبيض=عادي */
-function jumpBtnColor(){
-  if(infiniteJump) $('jump').style.background = '#7dff7d';
-  else if(doubleJump) $('jump').style.background = '#ffe66d';
-  else $('jump').style.background = '#fff';
+/* إرسال دبل جمب للصاحب */
+function sendGift(){
+  if(!run)return;
+  if(charges<=0){toast('ما عندك دبل جمب لترسله');return}
+  if(!conn||!conn.open){toast('ما في صاحب متصل');return}
+  conn.send({t:'gift'});
+  charges=0;
+  jumpColor();
+  toast('🎁 بعثت دبل جمب لصاحبك!');
 }
 
+function jumpColor(){
+  $('jump').style.background = charges>0 ? '#ffe66d' : '#fff';
+}
 function jump(){
   if(!run)return;
-  if(ground){ vy=JUMP; ground=false; return; }
-  if(infiniteJump){ vy=JUMP; return; }   /* لا نهائي بدون استهلاك */
-  if(doubleJump){
-    vy=JUMP; doubleJump=false;
-    jumpBtnColor();
-    toast('دبل جمب! ⚡');
+  const now=Date.now();
+  if(now-lastJumpTime>2500) jumpTaps=0;
+  lastJumpTime=now;
+  jumpTaps++;
+
+  if(ground){vy=JUMP;ground=false;return}
+  if(charges>0){
+    vy=JUMP;charges--;
+    jumpColor();
+    toast(maxCharges>=2?'قفزة إضافية ⚡':'دبل جمب! ⚡');
   }
 }
 
@@ -265,7 +311,7 @@ function update(dt){
   if(keys.KeyW||keys.ArrowUp)kz++;if(keys.KeyS||keys.ArrowDown)kz--;
   if(keys.KeyA||keys.ArrowLeft)kx--;if(keys.KeyD||keys.ArrowRight)kx++;
   kx+=mx;kz-=my;
-  const len=Math.hypot(kx,kz);if(len>1){kx/=len;kz/=len}
+  const l=Math.hypot(kx,kz);if(l>1){kx/=l;kz/=l}
   const fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
   const oldY=pos.y;
   let nx=pos.x+(fx*kz+rx*kx)*SPD*dt,nz=pos.z+(fz*kz+rz*kx)*SPD*dt;
@@ -282,54 +328,48 @@ function update(dt){
   if(vy<=0){
     let best=-1e9,hit=null;
     for(const p of plats){
-      const on=Math.abs(pos.x-p.x)<p.w+R*.6&&Math.abs(pos.z-p.z)<p.d+R*.6;
-      if(on&&oldY>=p.top-.05&&pos.y<=p.top+.05&&p.top>best){best=p.top;hit=p}
+      if(Math.abs(pos.x-p.x)<p.w+R*.6&&Math.abs(pos.z-p.z)<p.d+R*.6&&oldY>=p.top-.05&&pos.y<=p.top+.05&&p.top>best){best=p.top;hit=p}
     }
     if(hit){
       pos.y=best;vy=0;ground=true;
-      /* مرحلة جديدة = دبل جمب */
-      if(hit.st && hit.st !== stage){
-        stage=hit.st;
-        $('stage').textContent='المرحلة: '+stage;
-        if(stage === 6){
-          infiniteJump=true;
-          doubleJump=true;
-          jumpBtnColor();
-          toast('مرحلة 6 — دبل جمب لا نهائي! 🔥');
-        } else {
-          doubleJump=true;
-          jumpBtnColor();
-          toast('وصلت مرحلة '+stage+' — دبل جمب ⚡');
-        }
+      if(hit.st&&hit.st!==stage){
+        stage=hit.st;$('stage').textContent='المرحلة: '+stage;
+        maxCharges=(stage===6)?2:1;
+        charges=maxCharges;
+        jumpColor();
+        toast(stage===6?'مرحلة 6 — 3 قفزات! 🎯':'وصلت مرحلة '+stage+' — دبل جمب ⚡');
       }
       for(const cp of cps){
         if(Math.abs(cp.x-hit.x)<.6&&Math.abs(cp.z-hit.z)<.6&&Math.abs(cp.top-hit.top)<.5){
-          if(cp.id>lastCP){lastCP=cp.id;save.set(cp.x,cp.top+.05,cp.z);toast('نقطة حفظ ✔')}
+          if(cp.id>lastCP){
+            lastCP=cp.id;save.set(cp.x,cp.top+.05,cp.z);
+            charges=maxCharges;
+            jumpColor();
+            toast('نقطة حفظ ✔ — دبل جمب ⚡');
+          }
           break;
         }
       }
     }else ground=false;
   }else ground=false;
-  if(hurt<=0){
-    for(const s of spikes){
-      const dx=pos.x-s.x,dz=pos.z-s.z;
-      if(dx*dx+dz*dz<s.r*s.r&&pos.y>=s.top-.6&&pos.y<=s.top+1){die();break}
-    }
+  if(hurt<=0)for(const s of spikes){
+    const dx=pos.x-s.x,dz=pos.z-s.z;
+    if(dx*dx+dz*dz<s.r*s.r&&pos.y>=s.top-.6&&pos.y<=s.top+1){die();break}
   }
   if(pos.y<-25)die();
   if(finish&&!won&&Math.abs(pos.x-finish.x)<finish.w+.6&&Math.abs(pos.z-finish.z)<finish.d+.6&&pos.y>=finish.top-.3){
     won=true;
     if(!savedCode){
-      savedCode=POOL[~~(Math.random()*POOL.length)];coins=5;showCoins();
+      savedCode=makeCode();coins=11;showCoins();
       toast('فزت! 🎉');setTimeout(()=>showModal('كود الاسترداد',savedCode),700);
     }else toast('فزت! 🎉');
   }
 }
 function die(){
   pos.copy(lastCP<0?start:save);vy=0;ground=true;hurt=1;
-  if(!infiniteJump) doubleJump=true;
-  jumpBtnColor();
-  toast('آخ! 💥');
+  charges=maxCharges;
+  jumpColor();
+  toast('آخ! 💥 — دبل جمب ⚡');
 }
 
 let tTimer;
@@ -338,11 +378,31 @@ function toast(m){
   clearTimeout(tTimer);tTimer=setTimeout(()=>$('toast').style.display='none',1500);
 }
 function showCoins(){$('coinNum').textContent=coins}
-function showModal(t,c){$('modalTitle').textContent=t;$('modalCode').textContent=c;$('modal').style.display='flex'}
+function showModal(t,c){
+  $('modalTitle').textContent=t;
+  $('modalCode').textContent=c;
+  $('modal').style.display='flex';
+  $('copyBtn').textContent='نسخ';
+}
 const closeModal=()=>$('modal').style.display='none';
+
+function copyCode(){
+  const text=$('modalCode').textContent;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(okCopy).catch(()=>fallbackCopy(text));
+  }else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.cssText='position:fixed;top:-1000px;opacity:0';
+  document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,text.length);
+  try{document.execCommand('copy');okCopy()}catch(e){toast('تعذّر النسخ')}
+  document.body.removeChild(ta);
+}
+function okCopy(){$('copyBtn').textContent='تم ✔';toast('تم النسخ ✔');setTimeout(()=>$('copyBtn').textContent='نسخ',1500)}
+
 function redeem(){if(!savedCode){toast('لم تفز بعد');return}coins=0;showCoins();closeModal();toast('تم الاسترداد')}
 function showSaved(){if(!savedCode){toast('لا يوجد كود');return}showModal('الكود المحفوظ',savedCode)}
-function copyCode(){if(navigator.clipboard)navigator.clipboard.writeText($('modalCode').textContent);toast('تم النسخ ✔')}
 
 function loop(){
   requestAnimationFrame(loop);if(!run)return;
